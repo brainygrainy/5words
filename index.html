@@ -141,6 +141,16 @@
             <!-- Game tiles will be generated here -->
         </main>
 
+        <!-- Ad Unit -->
+        <div class="my-4">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-7313136524968138"
+                 data-ad-slot="3811112218"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+        </div>
+
         <div id="keyboard" class="w-full mt-4">
             <!-- Keyboard will be generated here -->
         </div>
@@ -198,6 +208,13 @@
                 gameContainer.classList.remove('hidden');
                 gameContainer.classList.add('flex');
                 
+                // Push the ad only after the container is visible
+                try {
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                } catch (e) {
+                    console.error("AdSense error:", e);
+                }
+
                 isProcessing = true;
 
                 if (wordList.length === 0) {
