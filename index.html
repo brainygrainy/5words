@@ -208,7 +208,7 @@
                 gameContainer.classList.remove('hidden');
                 gameContainer.classList.add('flex');
                 
-                // Push the ad only after the container is visible
+                // Push the ad only after the container is visible to prevent errors
                 try {
                     (adsbygoogle = window.adsbygoogle || []).push({});
                 } catch (e) {
