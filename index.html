@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5WORDS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f9fafb;
+            --text-color: #111827;
+            --key-bg: #ffffff;
+            --key-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --correct-bg: #3b82f6;
+            --present-bg: #f97316;
+            --absent-bg: #6b7280;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .key {
+            background-color: var(--key-bg);
+            box-shadow: var(--key-shadow);
+        }
+        
+        .title-glow {
+            animation: pulse-glow 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                text-shadow: 0 0 8px rgba(50, 50, 50, 0.2);
+            }
+            50% {
+                text-shadow: 0 0 16px rgba(50, 50, 50, 0.4);
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="flex flex-col items-center justify-center text-center">
+        <h1 class="text-7xl font-bold text-gray-800 mb-4 tracking-tight title-glow">5WORDS</h1>
+        <p class="text-gray-500 mb-10">Guess the 5-letter word.</p>
+        <a href="./game.html" class="key text-xl py-3 px-8 rounded-lg font-semibold">
+            Play
+        </a>
+        
+        <div class="mt-12 p-6 border border-gray-200 rounded-lg max-w-sm w-full">
+            <h2 class="text-xl font-bold text-gray-700 mb-4 text-center">How to Play</h2>
+            <div class="text-gray-600 space-y-2 mb-6 text-center">
+                <p>Guess the hidden 5-letter word in 6 tries.</p>
+                <p>Each guess must be a valid English word.</p>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-4 text-center">Color Hints</h3>
+            <div class="space-y-3">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-md flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl" style="background-color: var(--correct-bg);">W</div>
+                    <p class="text-left"><span class="font-bold">Blue</span> means the letter is in the word and in the correct spot.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-md flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl" style="background-color: var(--present-bg);">A</div>
+                    <p class="text-left"><span class="font-bold">Orange</span> means the letter is in the word but in the wrong spot.</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-md flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl" style="background-color: var(--absent-bg);">G</div>
+                    <p class="text-left"><span class="font-bold">Gray</span> means the letter is not in the word in any spot.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

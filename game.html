@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play 5WORDS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f9fafb;
+            --text-color: #111827;
+            --border-color: #d1d5db;
+            --key-bg: #ffffff;
+            --key-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --correct-bg: #3b82f6;
+            --present-bg: #f97316;
+            --absent-bg: #6b7280;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .key {
+            background-color: var(--key-bg);
+            box-shadow: var(--key-shadow);
+        }
+        
+        .key:disabled {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Game Container -->
+    <div id="game-container" class="flex flex-col items-center w-full h-full max-w-sm mx-auto">
+        <header class="w-full flex justify-between items-center pb-4 mb-4 border-b">
+            <h1 class="text-4xl font-bold text-gray-800 tracking-tight">5WORDS</h1>
+            <div class="flex items-center gap-4">
+                <div id="attempts-counter" class="text-lg font-semibold text-gray-500"></div>
+                <button id="hint-button" class="key p-2 rounded-lg font-semibold flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main id="game-board" class="w-full grid grid-rows-6 gap-2 mb-4">
+            <!-- Game rows and tiles will be generated here -->
+        </main>
+        
+        <div id="keyboard" class="w-full mt-4">
+            <!-- Keyboard will be generated here -->
+        </div>
+    </div>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-16 bg-gray-800 text-white font-semibold py-2 px-5 rounded-md shadow-lg opacity-0 transition-opacity duration-300">
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center">
+            <h2 class="text-3xl font-bold mb-2">Congratulations!</h2>
+            <p id="win-message" class="text-gray-700 mb-6"></p>
+            <div class="flex gap-4">
+                <button id="share-button" class="key w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" /></svg>
+                    Share
+                </button>
+                <button id="win-ok-button" class="key w-full py-3 rounded-lg font-semibold">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Definition Modal -->
+    <div id="definition-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center">
+            <h2 id="definition-word" class="text-3xl font-bold mb-2 capitalize"></h2>
+            <p id="definition-text" class="text-gray-700 mb-6"></p>
+            <button id="definition-play-again-button" class="key w-full py-3 rounded-lg font-semibold">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const gameBoard = document.getElementById('game-board');
+            const keyboardContainer = document.getElementById('keyboard');
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const attemptsCounter = document.getElementById('attempts-counter');
+            const hintButton = document.getElementById('hint-button');
+            
+            const winModal = document.getElementById('win-modal');
+            const winMessage = document.getElementById('win-message');
+            const shareButton = document.getElementById('share-button');
+            const winOkButton = document.getElementById('win-ok-button');
+
+            const definitionModal = document.getElementById('definition-modal');
+            const definitionWord = document.getElementById('definition-word');
+            const definitionText = document.getElementById('definition-text');
+            const definitionPlayAgainButton = document.getElementById('definition-play-again-button');
+
+            // --- Game State ---
+            const WORD_LENGTH = 5;
+            const MAX_ATTEMPTS = 6;
+            const MAX_HINTS_PER_TURN = 2;
+            let currentAttempt = 0;
+            let currentGuess = Array(WORD_LENGTH).fill('');
+            let secretWord = '';
+            let secretWordDefinition = '';
+            let secretWordList = [];
+            let validGuessList = new Set();
+            let isGameOver = false;
+            let isProcessing = true;
+            let keyState = {};
+            let hintsUsedThisAttempt = 0;
+            let lockedIndices = new Set();
+
+            // --- Keyboard Layout ---
+            const keys = [
+                ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+                ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+                ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACK']
+            ];
+
+            async function initializeGame() {
+                showToast("Loading dictionaries...", 3000);
+                createKeyboard();
+                createGameBoard();
+                try {
+                    const secretResponse = await fetch('https://gist.githubusercontent.com/cfreshman/a03ef2cba789d8cf00c08f767e0fad7b/raw/5d752e5f0702da315298a6bb5a771586d6ff445c/wordle-answers-alphabetical.txt');
+                    const secretText = await secretResponse.text();
+                    secretWordList = secretText.split('\n').map(w => w.trim().toUpperCase()).filter(w => w.length === WORD_LENGTH);
+
+                    const validResponse = await fetch('https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt');
+                    const validText = await validResponse.text();
+                    validText.split('\n').forEach(w => {
+                        const word = w.trim().toUpperCase();
+                        if (word.length === WORD_LENGTH) {
+                            validGuessList.add(word);
+                        }
+                    });
+
+                    await resetGame();
+                    showToast("System ready.", 1500);
+                } catch (error) {
+                    console.error("Failed to load word lists:", error);
+                    showToast("Error: Dictionaries offline.", 5000);
+                    isGameOver = true;
+                } finally {
+                    isProcessing = false;
+                }
+            }
+            
+            async function resetGame() {
+                currentAttempt = 0;
+                currentGuess = Array(WORD_LENGTH).fill('');
+                isGameOver = false;
+                isProcessing = false;
+                keyState = {};
+                hintsUsedThisAttempt = 0;
+                lockedIndices.clear();
+                
+                for(let i = 0; i < MAX_ATTEMPTS; i++) {
+                    for (let j = 0; j < WORD_LENGTH; j++) {
+                        const tile = gameBoard.children[i].children[j];
+                        tile.textContent = '';
+                        tile.style.backgroundColor = '';
+                        tile.style.borderColor = '';
+                        tile.classList.remove('text-white');
+                        tile.classList.add('border-gray-300');
+                    }
+                }
+                
+                Array.from(document.getElementsByClassName('key')).forEach(key => {
+                    key.disabled = false;
+                    key.style.backgroundColor = '';
+                    key.style.color = 'var(--text-color)';
+                });
+
+                secretWord = secretWordList[Math.floor(Math.random() * secretWordList.length)];
+                console.log("Secret Word:", secretWord);
+                
+                await fetchDefinition(secretWord);
+
+                hintButton.classList.remove('hidden');
+                hintButton.disabled = false;
+                updateAttemptsDisplay();
+            }
+
+            function createGameBoard() {
+                gameBoard.innerHTML = '';
+                for (let i = 0; i < MAX_ATTEMPTS; i++) {
+                    const row = document.createElement('div');
+                    row.classList.add('grid', 'grid-cols-5', 'gap-2');
+                    for (let j = 0; j < WORD_LENGTH; j++) {
+                        const tile = document.createElement('div');
+                        tile.classList.add('w-16', 'h-16', 'border-2', 'border-gray-300', 'flex', 'items-center', 'justify-center', 'text-4xl', 'font-bold', 'rounded-md');
+                        row.appendChild(tile);
+                    }
+                    gameBoard.appendChild(row);
+                }
+            }
+
+            function createKeyboard() {
+                keys.forEach(rowKeys => {
+                    const row = document.createElement('div');
+                    row.classList.add('flex', 'justify-center', 'gap-1.5', 'my-1');
+                    rowKeys.forEach(key => {
+                        const button = document.createElement('button');
+                        button.id = `key-${key}`;
+                        button.textContent = key;
+                        button.classList.add('key', 'h-14', 'rounded-md', 'font-semibold', 'uppercase');
+                        if (key.length > 1) {
+                            button.classList.add('px-4', 'text-sm');
+                        } else {
+                            button.classList.add('flex-1', 'text-lg');
+                        }
+                        button.addEventListener('click', () => handleKeyPress(key));
+                        row.appendChild(button);
+                    });
+                    keyboardContainer.appendChild(row);
+                });
+            }
+
+            function updateInputDisplay() {
+                const row = gameBoard.children[currentAttempt];
+                for (let i = 0; i < WORD_LENGTH; i++) {
+                    row.children[i].textContent = currentGuess[i] || '';
+                }
+            }
+            
+            function updateAttemptsDisplay() {
+                attemptsCounter.textContent = `Attempt ${currentAttempt + 1} / ${MAX_ATTEMPTS}`;
+            }
+
+            function handleKeyPress(key) {
+                if (isGameOver || isProcessing) return;
+                const upperKey = key.toUpperCase();
+                if (upperKey === 'ENTER') submitGuess();
+                else if (upperKey === 'BACK' || upperKey === 'BACKSPACE') deleteLetter();
+                else if (/^[A-Z]$/.test(upperKey)) addLetter(upperKey);
+            }
+            
+            function addLetter(letter) {
+                const firstEmptyIndex = currentGuess.findIndex(char => char === '');
+                if (firstEmptyIndex !== -1) {
+                    currentGuess[firstEmptyIndex] = letter;
+                    updateInputDisplay();
+                }
+            }
+
+            function deleteLetter() {
+                for (let i = WORD_LENGTH - 1; i >= 0; i--) {
+                    if (currentGuess[i] !== '' && !lockedIndices.has(i)) {
+                        currentGuess[i] = '';
+                        updateInputDisplay();
+                        break;
+                    }
+                }
+            }
+
+            function submitGuess() {
+                const finalGuessStr = currentGuess.join('');
+                if (finalGuessStr.length !== WORD_LENGTH || currentGuess.includes('')) {
+                    showToast("Incomplete word");
+                    return;
+                }
+                if (!validGuessList.has(finalGuessStr)) {
+                    showToast("Not in word list");
+                    return;
+                }
+                
+                isProcessing = true;
+                const feedback = evaluateGuess(finalGuessStr, secretWord);
+                displayGuessFeedback(finalGuessStr, feedback);
+                checkGameOver(finalGuessStr);
+            }
+
+            function evaluateGuess(guess, target) {
+                const feedback = new Array(WORD_LENGTH).fill(null);
+                const targetLetterCounts = {};
+                
+                for(let letter of target) {
+                    targetLetterCounts[letter] = (targetLetterCounts[letter] || 0) + 1;
+                }
+
+                for (let i = 0; i < WORD_LENGTH; i++) {
+                    if (guess[i] === target[i]) {
+                        feedback[i] = 'correct';
+                        targetLetterCounts[guess[i]]--;
+                    }
+                }
+
+                for (let i = 0; i < WORD_LENGTH; i++) {
+                    if (feedback[i]) continue;
+                    if (targetLetterCounts[guess[i]] > 0) {
+                        feedback[i] = 'present';
+                        targetLetterCounts[guess[i]]--;
+                    } else {
+                        feedback[i] = 'absent';
+                    }
+                }
+                return feedback;
+            }
+
+            function displayGuessFeedback(guess, feedback) {
+                const row = gameBoard.children[currentAttempt];
+                for (let i = 0; i < WORD_LENGTH; i++) {
+                    const tile = row.children[i];
+                    tile.textContent = guess[i];
+
+                    const status = feedback[i];
+                    let bgColor = 'var(--absent-bg)';
+                    if (status === 'correct') bgColor = 'var(--correct-bg)';
+                    if (status === 'present') bgColor = 'var(--present-bg)';
+                    
+                    tile.style.backgroundColor = bgColor;
+                    tile.style.borderColor = bgColor;
+                    tile.classList.add('text-white');
+                    updateKeyboard(guess[i], status);
+                }
+            }
+
+            function updateKeyboard(letter, status) {
+                const keyButton = document.getElementById(`key-${letter}`);
+                const currentStatus = keyState[letter];
+
+                if (currentStatus === 'correct' || (currentStatus === 'present' && status !== 'correct')) return;
+                
+                keyState[letter] = status;
+                let bgColor = 'var(--absent-bg)';
+                if (status === 'correct') bgColor = 'var(--correct-bg)';
+                if (status === 'present') bgColor = 'var(--present-bg)';
+                
+                keyButton.style.backgroundColor = bgColor;
+                keyButton.style.color = 'white';
+            }
+
+            function checkGameOver(guessStr) {
+                let gameHasEnded = false;
+                if (guessStr === secretWord) {
+                    isGameOver = true;
+                    gameHasEnded = true;
+                    confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+                    winMessage.textContent = `You guessed it in ${currentAttempt + 1} attempts!`;
+                    setTimeout(() => winModal.classList.remove('hidden'), 500);
+                } else if (currentAttempt >= MAX_ATTEMPTS - 1) {
+                    showToast(`The word was: ${secretWord}`, 4000);
+                    isGameOver = true;
+                    gameHasEnded = true;
+                    setTimeout(() => showDefinitionModal(), 1000);
+                }
+
+                if (gameHasEnded) {
+                    hintButton.classList.add('hidden');
+                    isProcessing = true; // Lock input
+                } else {
+                    currentAttempt++;
+                    currentGuess = Array(WORD_LENGTH).fill('');
+                    lockedIndices.clear();
+                    hintsUsedThisAttempt = 0;
+                    updateAttemptsDisplay();
+                    isProcessing = false;
+                    hintButton.disabled = false;
+                }
+            }
+
+            function handleHint() {
+                if (isGameOver || isProcessing || hintsUsedThisAttempt >= MAX_HINTS_PER_TURN) return;
+                
+                const emptyIndices = [];
+                for (let i = 0; i < WORD_LENGTH; i++) {
+                    if (currentGuess[i] === '') {
+                        emptyIndices.push(i);
+                    }
+                }
+                
+                if(emptyIndices.length === 0) {
+                    showToast("No empty spaces for a hint.");
+                    return;
+                }
+
+                const randomIndex = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+                const letter = secretWord[randomIndex];
+                
+                currentGuess[randomIndex] = letter;
+                lockedIndices.add(randomIndex);
+                updateInputDisplay();
+
+                hintsUsedThisAttempt++;
+                hintButton.disabled = hintsUsedThisAttempt >= MAX_HINTS_PER_TURN;
+                showToast(`Hint used (${hintsUsedThisAttempt}/${MAX_HINTS_PER_TURN} this turn)`);
+            }
+
+            async function fetchDefinition(word) {
+                secretWordDefinition = ''; // Reset definition
+                const prompt = `Provide a simple, one-sentence definition for the word "${word}".`;
+                try {
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0) {
+                        secretWordDefinition = result.candidates[0].content.parts[0].text.trim();
+                    } else {
+                        throw new Error("No definition received.");
+                    }
+                } catch (error) {
+                    console.error("Definition Error:", error);
+                    secretWordDefinition = "Could not retrieve a definition at this time.";
+                }
+            }
+
+            function showDefinitionModal() {
+                definitionWord.textContent = secretWord;
+                definitionText.textContent = secretWordDefinition || "Loading definition...";
+                definitionModal.classList.remove('hidden');
+            }
+
+            function shareResult() {
+                const textToCopy = "www.5words.in";
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast("Link copied to clipboard!");
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                }
+                document.body.removeChild(textArea);
+            }
+            
+            function showToast(message, duration = 2000) {
+                toastMessage.textContent = message;
+                toast.classList.remove('opacity-0');
+                setTimeout(() => { toast.classList.add('opacity-0'); }, duration);
+            }
+
+            // --- Event Listeners ---
+            winOkButton.addEventListener('click', () => {
+                winModal.classList.add('hidden');
+                showDefinitionModal();
+            });
+            definitionPlayAgainButton.addEventListener('click', () => {
+                definitionModal.classList.add('hidden');
+                showToast("Loading new game...", 2000);
+                resetGame();
+            });
+            hintButton.addEventListener('click', handleHint);
+            shareButton.addEventListener('click', shareResult);
+            document.addEventListener('keydown', (e) => handleKeyPress(e.key));
+
+            // --- Initial Game Load ---
+            initializeGame();
+        });
+    </script>
+</body>
+</html>
